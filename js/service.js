@@ -1,8 +1,2 @@
 "use strict";
-
-let service = ((){
-
-
-
-    
-})
+let service;

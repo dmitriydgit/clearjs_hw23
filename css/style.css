@@ -45,3 +45,15 @@ img:hover {
 .gallery-wraper {
     background-color: #F8F9F5;
 }*/
+.old-color {
+    background-color: #286090;
+}
+.new-color{
+    background-color:grey;
+}
+.show {
+    display: block;
+}
+.hide {
+    display:none;
+}

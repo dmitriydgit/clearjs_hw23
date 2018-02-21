@@ -6,7 +6,8 @@
             sortBlock = document.querySelector("#type-selector"),
             counter = document.querySelector('#counter'),
             backCounter = document.querySelector('#back-counter'),
-            modal = document.querySelector("#myModal");
+            modal = document.querySelector("#myModal"),
+            cardsLimit = 10;
     let     imageCounter = 0,
             readyDataForGallery = [], //массив подготовленных эл-в
             visibleData = [], //массив эл-в, которые есть на экране
@@ -16,15 +17,14 @@
         sortBlock.value = localStorage.sortMethod ? localStorage.sortMethod : "0";
         readyDataForGallery = data.map((item, index) => {                 //creating array after loading
             return {
-                    url: urlFomat(item.url),
-                    name: nameFormat(item.name),
-                    description: descriptionFormat(item.description),
-                    date: dateFormat(item.date),
-                    id: "img_" + index
+                    url: item.url,
+                    name: item.name,
+                    description: item.description,
+                    date: item.date,
+                    id: "card_" + index
                     }
         });
     }
-  
     let nameFormat = (name) => {
         return  name ? name[0].toUpperCase() + name.substring(1).toLowerCase() : "Lohn Doh";
     };
@@ -44,90 +44,61 @@
 
     let galleryItem = (item, index) => {
         return `<div class="col-md-3 col-xs-6 gallery-item" id = "${item.id}">
-                    <img src="${item.url}" alt="${item.name}" class="img-thumbnail">
+                    <img src="${urlFomat(item.url)}" alt="${nameFormat(item.name)}" class="img-thumbnail">
                     <div class="info-wrapper">
-                        <div class="text-muted item-name">${index}: ${item.name}</div>
-                        <div class="text-muted top-padding">${item.description}</div>
-                        <div class="text-muted">${item.date}</div>
+                        <div class="text-muted item-name">${index}: ${nameFormat(item.name)}</div>
+                        <div class="text-muted top-padding">${descriptionFormat(item.description)}</div>
+                        <div class="text-muted">${dateFormat(item.date)}</div>
                     </div>
-                    <div  id = "delete-img" class = "btn btn-danger" title = "Удалить данное изображение"> Удалить </div>
+                    <div  name = "delete-img" class = "btn btn-danger" title = "Удалить данное изображение"> Удалить </div>
                 </div>`;
     };
 
     let reBuildGallery = (array) => {
         resultBlock.innerHTML = "";
-        for (let i = 0; i < array.length; i++) {
-                resultBlock.innerHTML += galleryItem(array[i], i+1);
+        for (let i = 0; i < array.length; i++) {    
+            resultBlock.innerHTML += galleryItem(array[i], i+1);
         }
         imageCounter = array.length;
         counter.innerHTML = imageCounter;
         backCounter.innerHTML = readyDataForGallery.length - imageCounter;
+        checkLimit(); 
     };
-
-
-//*************************LISTENERS*************************************************************
-
+//*******************************LISTENERS*************************************************************
     let initListeners = () => {
         document.addEventListener("DOMContentLoaded", ready);
         addImgBtn.addEventListener("click", addImage);
-        addImgBtn.addEventListener("click", sortGallery);
         resultBlock.addEventListener("click", deleteImage);
         sortBlock.addEventListener("change", sortGallery);
     }
-
-//***************************************************SORTGALLERY*********************************************
-
-    let sortNameAz = (a , b) => {
-        if(a.name < b.name) return -1;
-        if(a.name > b.name) return 1;
-        return 0;
-    };
-    let sortNameZa = (a , b) => {
-        if(a.name < b.name) return 1;
-        if(a.name > b.name) return -1;
-        return 0;
-    };
-    let sortDateAz = (a , b) => {
-        if(a.date < b.date) return -1;
-        if(a.date > b.date) return 1;
-        return 0;
-    };
-    let sortDateZa = (a , b) => {
-        if(a.date < b.date) return 1;
-        if(a.date > b.date) return -1;
-        return 0;
-    };
+//*****************************SORTGALLERY*********************************************
 
     let sortGallery = () => {
-        let method;
         switch (sortBlock.value) {
             case "0":
-                method = sortNameAz;
+                visibleData.sort((a , b) => (a.name > b.name));
                 localStorage.setItem('sortMethod', '0');
                 break;
             case "1":
-                method = sortNameAz;
+                visibleData.sort((a , b) => (a.name > b.name));
                 localStorage.setItem('sortMethod', '1');
                 break;
             case "2":
-                method = sortNameZa;
+            visibleData.sort((a , b) => (a.name < b.name));
                 localStorage.setItem('sortMethod', '2');
                 break;
             case "3":
-                method = sortDateAz;
+                visibleData.sort((a , b) => (a.date < b.date));
                 localStorage.setItem('sortMethod', '3');
                 break;
             case "4":
-                method = sortDateZa;
+                visibleData.sort((a , b) => (a.date > b.date));
                 localStorage.setItem('sortMethod', '4');
                 break;
         }
-        visibleData.sort(method);
         reBuildGallery(visibleData);
     };
-
 //**********************************DELETEIMAGE**********************************************
-
     let findIndexWithId = (id, array) => {
         let temp;
         array.forEach( elem => {
@@ -143,20 +114,32 @@
           deletedItem,
           target = event.target;
         
-          if (target.id == "delete-img"){
+          if (target.classList.contains("btn-danger")){
             tempId = target.closest(".gallery-item").id;
             deletedItem = visibleData[findIndexWithId(tempId, visibleData)];
             deletedData.push(deletedItem);
             visibleData.splice(visibleData.indexOf(deletedItem), 1);
             addImgBtn.disabled = false;
-            addImgBtn.style.backgroundColor = "#286090";
+            
             reBuildGallery(visibleData);
+            checkLimit();
         }
     };
-
-  //**************************************addimage********************************************************
-
-    let  addImage = () => {
+//********************************************************************************************* 
+    let checkLimit = () => {
+        if (imageCounter < cardsLimit) {
+            addImgBtn.removeAttribute( "disabled");
+            addImgBtn.style.backgroundColor = "#337ab7";
+            addImgBtn.removeAttribute("data-toggle");
+        }
+        if (imageCounter === cardsLimit) {
+             addImgBtn.setAttribute( "disabled", "true");
+             addImgBtn.style.backgroundColor = "grey";
+             addImgBtn.setAttribute("data-toggle", "modal");
+         }
+        
+    }
+    let prepearDataToAdd = () => {
         if (deletedData.length == 0) {
             for (let item of readyDataForGallery) {
                 if(visibleData.indexOf(item) === -1 ) {
@@ -170,34 +153,15 @@
             temp = deletedData.pop();
             visibleData.push(temp);
         }
-        if (imageCounter >= 9) {
-            addImgBtn.setAttribute("data-toggle" , "modal");
-            addImgBtn.setAttribute("data-target" , "#myModal");
-        }
-        if (imageCounter < 9) {
-            addImgBtn.removeAttribute("data-toggle" , "modal");        
-            addImgBtn.removeAttribute("data-target" , "#myModal");
-        }
-        if (imageCounter === 10) {
-            addImgBtn.disabled = true;
-            addImgBtn.style.backgroundColor = "grey";
-        }
+    }
+  //**************************************addimage********************************************************
+    let  addImage = () => {
+        prepearDataToAdd();
+        sortGallery();
     };
-    
+
     initListeners();
 
-})();
+}());
 
-
-/*
-2 не до конца получилось реализовать окно с помощью modal  , строки  173-183 (как то не смог докрутить, подскажите как правильно.)  +-
-
-
-
-/*Вопрос1: вместо <div  id = "delete-img"... у меня раньше создавалась <form> <button id = "delete-img">...,
-           но когда я нажимал на кнопку удалить - удалялись все изображения и дебагер не отслеживал событие.
-           с чем это связано? с поведением формы?
-*/
-
-
-
+  
